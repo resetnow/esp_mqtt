@@ -77,7 +77,7 @@ mqtt_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 
 	if (client->ip.addr == 0 && ipaddr->addr != 0)
 	{
-		os_memcpy(client->pCon->proto.tcp->remote_ip, &ipaddr->addr, 4);
+		memcpy(client->pCon->proto.tcp->remote_ip, &ipaddr->addr, 4);
 		if (client->security) {
 #ifdef MQTT_SSL_ENABLE
 			espconn_secure_connect(client->pCon);
@@ -161,8 +161,8 @@ mqtt_tcpclient_delete(MQTT_Client *mqttClient)
 		INFO("Free memory\r\n");
 		espconn_delete(mqttClient->pCon);
 		if (mqttClient->pCon->proto.tcp)
-			os_free(mqttClient->pCon->proto.tcp);
-		os_free(mqttClient->pCon);
+			free(mqttClient->pCon->proto.tcp);
+		free(mqttClient->pCon);
 		mqttClient->pCon = NULL;
 	}
 }
@@ -177,47 +177,47 @@ mqtt_client_delete(MQTT_Client *mqttClient)
 {
 	mqtt_tcpclient_delete(mqttClient);
 	if (mqttClient->host != NULL) {
-		os_free(mqttClient->host);
+		free(mqttClient->host);
 		mqttClient->host = NULL;
 	}
 
 	if (mqttClient->user_data != NULL) {
-		os_free(mqttClient->user_data);
+		free(mqttClient->user_data);
 		mqttClient->user_data = NULL;
 	}
 
 	if(mqttClient->connect_info.client_id != NULL) {
-		os_free(mqttClient->connect_info.client_id);
+		free(mqttClient->connect_info.client_id);
 		mqttClient->connect_info.client_id = NULL;
 	}
 
 	if(mqttClient->connect_info.username != NULL) {
-		os_free(mqttClient->connect_info.username);
+		free(mqttClient->connect_info.username);
 		mqttClient->connect_info.username = NULL;
 	}
 
 	if(mqttClient->connect_info.password != NULL) {
-		os_free(mqttClient->connect_info.password);
+		free(mqttClient->connect_info.password);
 		mqttClient->connect_info.password = NULL;
 	}
 
 	if(mqttClient->connect_info.will_topic != NULL) {
-		os_free(mqttClient->connect_info.will_topic);
+		free(mqttClient->connect_info.will_topic);
 		mqttClient->connect_info.will_topic = NULL;
 	}
 
 	if(mqttClient->connect_info.will_message != NULL) {
-		os_free(mqttClient->connect_info.will_message);
+		free(mqttClient->connect_info.will_message);
 		mqttClient->connect_info.will_message = NULL;
 	}
 
 	if(mqttClient->mqtt_state.in_buffer != NULL) {
-		os_free(mqttClient->mqtt_state.in_buffer);
+		free(mqttClient->mqtt_state.in_buffer);
 		mqttClient->mqtt_state.in_buffer = NULL;
 	}
 
 	if(mqttClient->mqtt_state.out_buffer != NULL) {
-		os_free(mqttClient->mqtt_state.out_buffer);
+		free(mqttClient->mqtt_state.out_buffer);
 		mqttClient->mqtt_state.out_buffer = NULL;
 	}
 }
@@ -244,7 +244,7 @@ mqtt_tcpclient_recv(void *arg, char *pdata, unsigned short len)
 READPACKET:
 	INFO("TCP: data received %d bytes\r\n", len);
 	if (len < MQTT_BUF_SIZE && len > 0) {
-		os_memcpy(client->mqtt_state.in_buffer, pdata, len);
+		memcpy(client->mqtt_state.in_buffer, pdata, len);
 
 		msg_type = mqtt_get_type(client->mqtt_state.in_buffer);
 		msg_qos = mqtt_get_qos(client->mqtt_state.in_buffer);
@@ -695,10 +695,10 @@ MQTT_InitConnection(MQTT_Client *mqttClient, uint8_t* host, uint32_t port, uint8
 {
 	uint32_t temp;
 	INFO("MQTT_InitConnection\r\n");
-	os_memset(mqttClient, 0, sizeof(MQTT_Client));
-	temp = os_strlen(host);
-	mqttClient->host = (uint8_t*)os_zalloc(temp + 1);
-	os_strcpy(mqttClient->host, host);
+	memset(mqttClient, 0, sizeof(MQTT_Client));
+	temp = strlen(host);
+	mqttClient->host = (uint8_t*)calloc(1, temp + 1);
+	strcpy(mqttClient->host, host);
 	mqttClient->host[temp] = 0;
 	mqttClient->port = port;
 	mqttClient->security = security;
@@ -720,26 +720,26 @@ MQTT_InitClient(MQTT_Client *mqttClient, uint8_t* client_id, uint8_t* client_use
 	uint32_t temp;
 	INFO("MQTT_InitClient\r\n");
 
-	os_memset(&mqttClient->connect_info, 0, sizeof(mqtt_connect_info_t));
+	memset(&mqttClient->connect_info, 0, sizeof(mqtt_connect_info_t));
 
-	temp = os_strlen(client_id);
-	mqttClient->connect_info.client_id = (uint8_t*)os_zalloc(temp + 1);
-	os_strcpy(mqttClient->connect_info.client_id, client_id);
+	temp = strlen(client_id);
+	mqttClient->connect_info.client_id = (uint8_t*)calloc(1, temp + 1);
+	strcpy(mqttClient->connect_info.client_id, client_id);
 	mqttClient->connect_info.client_id[temp] = 0;
 
 	if (client_user)
 	{
-		temp = os_strlen(client_user);
-		mqttClient->connect_info.username = (uint8_t*)os_zalloc(temp + 1);
-		os_strcpy(mqttClient->connect_info.username, client_user);
+		temp = strlen(client_user);
+		mqttClient->connect_info.username = (uint8_t*)calloc(1, temp + 1);
+		strcpy(mqttClient->connect_info.username, client_user);
 		mqttClient->connect_info.username[temp] = 0;
 	}
 
 	if (client_pass)
 	{
-		temp = os_strlen(client_pass);
-		mqttClient->connect_info.password = (uint8_t*)os_zalloc(temp + 1);
-		os_strcpy(mqttClient->connect_info.password, client_pass);
+		temp = strlen(client_pass);
+		mqttClient->connect_info.password = (uint8_t*)calloc(1, temp + 1);
+		strcpy(mqttClient->connect_info.password, client_pass);
 		mqttClient->connect_info.password[temp] = 0;
 	}
 
@@ -747,9 +747,9 @@ MQTT_InitClient(MQTT_Client *mqttClient, uint8_t* client_id, uint8_t* client_use
 	mqttClient->connect_info.keepalive = keepAliveTime;
 	mqttClient->connect_info.clean_session = cleanSession;
 
-	mqttClient->mqtt_state.in_buffer = (uint8_t *)os_zalloc(MQTT_BUF_SIZE);
+	mqttClient->mqtt_state.in_buffer = (uint8_t *) calloc(1, MQTT_BUF_SIZE);
 	mqttClient->mqtt_state.in_buffer_length = MQTT_BUF_SIZE;
-	mqttClient->mqtt_state.out_buffer =  (uint8_t *)os_zalloc(MQTT_BUF_SIZE);
+	mqttClient->mqtt_state.out_buffer =  (uint8_t *) calloc(1, MQTT_BUF_SIZE);
 	mqttClient->mqtt_state.out_buffer_length = MQTT_BUF_SIZE;
 	mqttClient->mqtt_state.connect_info = &mqttClient->connect_info;
 
@@ -764,14 +764,14 @@ void ICACHE_FLASH_ATTR
 MQTT_InitLWT(MQTT_Client *mqttClient, uint8_t* will_topic, uint8_t* will_msg, uint8_t will_qos, uint8_t will_retain)
 {
 	uint32_t temp;
-	temp = os_strlen(will_topic);
-	mqttClient->connect_info.will_topic = (uint8_t*)os_zalloc(temp + 1);
-	os_strcpy(mqttClient->connect_info.will_topic, will_topic);
+	temp = strlen(will_topic);
+	mqttClient->connect_info.will_topic = (uint8_t*)calloc(1, temp + 1);
+	strcpy(mqttClient->connect_info.will_topic, will_topic);
 	mqttClient->connect_info.will_topic[temp] = 0;
 
-	temp = os_strlen(will_msg);
-	mqttClient->connect_info.will_message = (uint8_t*)os_zalloc(temp + 1);
-	os_strcpy(mqttClient->connect_info.will_message, will_msg);
+	temp = strlen(will_msg);
+	mqttClient->connect_info.will_message = (uint8_t*)calloc(1, temp + 1);
+	strcpy(mqttClient->connect_info.will_message, will_msg);
 	mqttClient->connect_info.will_message[temp] = 0;
 
 
@@ -792,13 +792,13 @@ MQTT_Connect(MQTT_Client *mqttClient)
 		// disconnection callback is invoked.
 		mqtt_tcpclient_delete(mqttClient);
 	}
-	mqttClient->pCon = (struct espconn *)os_zalloc(sizeof(struct espconn));
+	mqttClient->pCon = (struct espconn *)calloc(1, sizeof(struct espconn));
 	mqttClient->pCon->type = ESPCONN_TCP;
 	mqttClient->pCon->state = ESPCONN_NONE;
-	mqttClient->pCon->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
+	mqttClient->pCon->proto.tcp = (esp_tcp *)calloc(1, sizeof(esp_tcp));
 	mqttClient->pCon->proto.tcp->local_port = espconn_port();
 	mqttClient->pCon->proto.tcp->remote_port = mqttClient->port;
-	mqttClient->pCon->reverse = mqttClient;
+	mqttClient->pCon->reserve = mqttClient;
 	espconn_regist_connectcb(mqttClient->pCon, mqtt_tcpclient_connect_cb);
 	espconn_regist_reconcb(mqttClient->pCon, mqtt_tcpclient_recon_cb);
 
