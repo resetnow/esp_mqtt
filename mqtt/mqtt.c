@@ -59,7 +59,7 @@ LOCAL void ICACHE_FLASH_ATTR
 mqtt_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
 	struct espconn *pConn = (struct espconn *)arg;
-	MQTT_Client* client = (MQTT_Client *)pConn->reverse;
+	MQTT_Client* client = (MQTT_Client *)pConn->reserve;
 
 
 	if (ipaddr == NULL)
@@ -238,7 +238,7 @@ mqtt_tcpclient_recv(void *arg, char *pdata, unsigned short len)
 	uint16_t msg_id;
 
 	struct espconn *pCon = (struct espconn*)arg;
-	MQTT_Client *client = (MQTT_Client *)pCon->reverse;
+	MQTT_Client *client = (MQTT_Client *)pCon->reserve;
 
 	client->keepAliveTick = 0;
 READPACKET:
@@ -373,7 +373,7 @@ void ICACHE_FLASH_ATTR
 mqtt_tcpclient_sent_cb(void *arg)
 {
 	struct espconn *pCon = (struct espconn *)arg;
-	MQTT_Client* client = (MQTT_Client *)pCon->reverse;
+	MQTT_Client* client = (MQTT_Client *)pCon->reserve;
 	INFO("TCP: Sent\r\n");
 	client->sendTimeout = 0;
 	client->keepAliveTick =0;
@@ -416,7 +416,7 @@ mqtt_tcpclient_discon_cb(void *arg)
 {
 
 	struct espconn *pespconn = (struct espconn *)arg;
-	MQTT_Client* client = (MQTT_Client *)pespconn->reverse;
+	MQTT_Client* client = (MQTT_Client *)pespconn->reserve;
 	INFO("TCP: Disconnected callback\r\n");
 	if(TCP_DISCONNECTING == client->connState) {
 		client->connState = TCP_DISCONNECTED;
@@ -444,7 +444,7 @@ void ICACHE_FLASH_ATTR
 mqtt_tcpclient_connect_cb(void *arg)
 {
 	struct espconn *pCon = (struct espconn *)arg;
-	MQTT_Client* client = (MQTT_Client *)pCon->reverse;
+	MQTT_Client* client = (MQTT_Client *)pCon->reserve;
 
 	espconn_regist_disconcb(client->pCon, mqtt_tcpclient_discon_cb);
 	espconn_regist_recvcb(client->pCon, mqtt_tcpclient_recv);////////
@@ -484,7 +484,7 @@ void ICACHE_FLASH_ATTR
 mqtt_tcpclient_recon_cb(void *arg, sint8 errType)
 {
 	struct espconn *pCon = (struct espconn *)arg;
-	MQTT_Client* client = (MQTT_Client *)pCon->reverse;
+	MQTT_Client* client = (MQTT_Client *)pCon->reserve;
 
 	INFO("TCP: Reconnect to %s:%d\r\n", client->host, client->port);
 
