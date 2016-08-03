@@ -33,6 +33,12 @@
 #include "mqtt_msg.h"
 #include "user_interface.h"
 
+#include <FreeRTOS.h>
+#include <timers.h>
+#include <task.h>
+#include <semphr.h>
+#include <freertos/queue.h>
+
 #include "queue.h"
 typedef struct mqtt_event_data_t
 {
@@ -104,7 +110,10 @@ typedef struct  {
 	MqttCallback publishedCb;
 	MqttCallback timeoutCb;
 	MqttDataCallback dataCb;
-	ETSTimer mqttTimer;
+	xTimerHandle mqttTimer;
+	xTaskHandle mqttTask;
+	xSemaphoreHandle mqttExitSem;
+	xQueueHandle mqttTaskQueue;
 	uint32_t keepAliveTick;
 	uint32_t reconnectTick;
 	uint32_t sendTimeout;

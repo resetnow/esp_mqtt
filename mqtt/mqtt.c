@@ -29,16 +29,23 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "user_interface.h"
+#include <user_interface.h>
+#include <espconn.h>
+#include <os_type.h>
+#include <mem.h>
+#include <mqtt_msg.h>
+#include <debug.h>
+#include <user_config.h>
+#include <mqtt.h>
+#include <queue.h>
+
+#include <stdlib.h>
+#include <FreeRTOS.h>
+#include <semphr.h>
+#include <timers.h>
+#include <task.h>
+
 #include "osapi.h"
-#include "espconn.h"
-#include "os_type.h"
-#include "mem.h"
-#include "mqtt_msg.h"
-#include "debug.h"
-#include "user_config.h"
-#include "mqtt.h"
-#include "queue.h"
 
 #define MQTT_TASK_PRIO        		2
 #define MQTT_TASK_QUEUE_SIZE    	1
@@ -53,7 +60,7 @@ unsigned int default_certificate_len = 0;
 unsigned char *default_private_key;
 unsigned int default_private_key_len = 0;
 
-os_event_t mqtt_procTaskQueue[MQTT_TASK_QUEUE_SIZE];
+static os_event_t mqtt_procTaskQueue[MQTT_TASK_QUEUE_SIZE];
 
 LOCAL void ICACHE_FLASH_ATTR
 mqtt_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
@@ -386,9 +393,9 @@ mqtt_tcpclient_sent_cb(void *arg)
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t)client);
 }
 
-void ICACHE_FLASH_ATTR mqtt_timer(void *arg)
+void ICACHE_FLASH_ATTR mqtt_timer(xTimerHandle timer)
 {
-	MQTT_Client* client = (MQTT_Client*)arg;
+	MQTT_Client* client = (MQTT_Client*) pvTimerGetTimerID(timer);
 
 	if (client->connState == MQTT_DATA) {
 		client->keepAliveTick ++;
@@ -757,6 +764,8 @@ MQTT_InitClient(MQTT_Client *mqttClient, uint8_t* client_id, uint8_t* client_use
 
 	QUEUE_Init(&mqttClient->msgQueue, QUEUE_BUFFER_SIZE);
 
+	mqttClient->mqttTimer = xTimerCreate(NULL, configTICK_RATE_HZ, 1, (void *) mqttClient, mqtt_timer);
+
 	system_os_task(MQTT_Task, MQTT_TASK_PRIO, mqtt_procTaskQueue, MQTT_TASK_QUEUE_SIZE);
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t)mqttClient);
 }
@@ -805,10 +814,8 @@ MQTT_Connect(MQTT_Client *mqttClient)
 	mqttClient->keepAliveTick = 0;
 	mqttClient->reconnectTick = 0;
 
-
-	os_timer_disarm(&mqttClient->mqttTimer);
-	os_timer_setfn(&mqttClient->mqttTimer, (os_timer_func_t *)mqtt_timer, mqttClient);
-	os_timer_arm(&mqttClient->mqttTimer, 1000, 1);
+	xTimerReset(mqttClient->mqttTimer, portMAX_DELAY);
+	xTimerStart(mqttClient->mqttTimer, portMAX_DELAY);
 
 	if (UTILS_StrToIP(mqttClient->host, &mqttClient->pCon->proto.tcp->remote_ip)) {
 		INFO("TCP: Connect to ip  %s:%d\r\n", mqttClient->host, mqttClient->port);
@@ -845,7 +852,7 @@ MQTT_DeleteClient(MQTT_Client *mqttClient)
 {
 	mqttClient->connState = MQTT_DELETING;
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t)mqttClient);
-	os_timer_disarm(&mqttClient->mqttTimer);
+	xTimerDelete(mqttClient->mqttTimer, portMAX_DELAY);
 }
 
 void ICACHE_FLASH_ATTR
