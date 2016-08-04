@@ -113,7 +113,7 @@ typedef struct  {
 	xTimerHandle mqttTimer;
 	xTaskHandle mqttTask;
 	xSemaphoreHandle mqttExitSem;
-	xQueueHandle mqttTaskQueue;
+	xSemaphoreHandle mqttTaskSem;
 	uint32_t keepAliveTick;
 	uint32_t reconnectTick;
 	uint32_t sendTimeout;
